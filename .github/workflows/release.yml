@@ -3,7 +3,7 @@ name: Auto Release on EXE Upload
 on:
   push:
     paths:
-      - 'TodayIsSetup_v*.exe'  # .exe 파일이 푸시될 때만 실행
+      - 'TodayIsSetup_v*.exe'
 
 jobs:
   release:
@@ -12,10 +12,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check if EXE was added or modified
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep -q "TodayIsSetup_v.*\.exe"; then
+            echo "EXE file changed, proceeding with release."
+          else
+            echo "EXE file not added or modified, skipping release."
+            exit 0
+          fi
+
       - name: Get version from file name
         id: get_version
         run: |
           EXE_FILE=$(ls TodayIsSetup_v*.exe | head -n 1)
+          if [ -z "$EXE_FILE" ]; then
+            echo "No EXE file found, skipping release."
+            exit 1
+          fi
           VERSION=$(echo $EXE_FILE | sed -E 's/TodayIsSetup_v(.*)\.exe/\1/')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
