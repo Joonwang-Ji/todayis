@@ -1,0 +1,38 @@
+name: Auto Release on EXE Upload
+
+on:
+  push:
+    paths:
+      - 'TodayIsSetup_v*.exe'  # .exe 파일이 푸시될 때만 실행
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from file name
+        id: get_version
+        run: |
+          EXE_FILE=$(ls TodayIsSetup_v*.exe | head -n 1)
+          VERSION=$(echo $EXE_FILE | sed -E 's/TodayIsSetup_v(.*)\.exe/\1/')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Create Tag
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git tag "v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          name: "Release v${{ env.VERSION }}"
+          body: "Automated release for TodayIsSetup_v${{ env.VERSION }}.exe"
+          files: |
+            TodayIsSetup_v${{ env.VERSION }}.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
